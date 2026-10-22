@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Downloaded source files (re-downloaded by the ingest step)
+data/
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+logs/
+
+# Credentials: never commit service account keys
+*.json
+!transform/**/*.json
+.env

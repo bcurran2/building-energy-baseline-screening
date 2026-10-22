@@ -1,0 +1,62 @@
+models:
+  - name: int_electricity_hourly
+    description: >
+      One row per building-hour with the reading, building attributes, site
+      temperature, and the baseline conditions (hour of day, weekend flag,
+      10 F temperature band). Same row count as stg_bdg2__electricity.
+    columns:
+      - name: building_id
+        data_tests: [not_null]
+      - name: reading_ts
+        data_tests: [not_null]
+      - name: air_temp_c
+        description: NULL when the site has no weather reading for that hour (~0.4% of rows).
+      - name: is_baseline_period
+        description: True for the baseline year (before var comparison_start), false for the comparison year.
+        data_tests: [not_null]
+
+  - name: int_building_baseline
+    description: Median baseline-year kWh per building, hour of day, weekend flag, and temperature band.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [building_id, hour_of_day, is_weekend, temp_bin_10f]
+    columns:
+      - name: baseline_kwh
+        data_tests: [not_null]
+      - name: n_hours
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: "{{ var('min_condition_hours') }}"
+
+  - name: int_building_performance
+    description: Comparison-year actual vs. expected kWh per building, over matched hours only.
+    columns:
+      - name: building_id
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('int_building_baseline_quality')
+                field: building_id
+      - name: matched_hours
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: "{{ var('min_matched_hours') }}"
+      - name: expected_kwh
+        data_tests: [not_null]
+
+  - name: int_building_baseline_quality
+    description: Baseline-year data quality checks and a status per building.
+    columns:
+      - name: building_id
+        data_tests: [not_null, unique]
+      - name: baseline_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ok, dead_meter_2016, low_baseline, unstable_2016]

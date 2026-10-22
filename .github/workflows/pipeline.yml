@@ -1,0 +1,97 @@
+# Runs the full pipeline against BigQuery: ingest -> dbt build (models + tests)
+# -> export dashboard CSVs. Weekly, or on demand from the Actions tab.
+#
+# Setup (see README > Scheduled runs): add a repository secret GCP_SA_KEY
+# (service account key JSON) and a repository variable GCP_PROJECT. Until both
+# exist, the run skips itself with a notice instead of failing.
+name: Pipeline
+
+on:
+  schedule:
+    - cron: "37 11 * * 1" # Mondays, 11:37 UTC
+  workflow_dispatch:
+    inputs:
+      force_reload:
+        description: Reload raw tables even if they are current
+        type: boolean
+        default: false
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      BQ_LOCATION: ${{ vars.BQ_LOCATION || 'US' }}
+      DBT_PROFILES_DIR: ${{ github.workspace }}/transform
+    steps:
+      - name: Check configuration
+        id: config
+        env:
+          HAS_KEY: ${{ secrets.GCP_SA_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ] || [ -z "$GCP_PROJECT" ]; then
+            echo "::notice::GCP_SA_KEY secret or GCP_PROJECT variable is not set; skipping. See README > Scheduled runs."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.config.outputs.ready == 'true'
+
+      - name: Authenticate to Google Cloud
+        if: steps.config.outputs.ready == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: actions/setup-python@v5
+        if: steps.config.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        if: steps.config.outputs.ready == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Ingest raw data
+        if: steps.config.outputs.ready == 'true'
+        run: python -m ingest.load_bdg2 ${{ inputs.force_reload && '--force' || '' }}
+
+      - name: dbt build (models + tests)
+        if: steps.config.outputs.ready == 'true'
+        working-directory: transform
+        run: |
+          dbt deps
+          dbt build
+
+      - name: Export dashboard CSVs
+        if: steps.config.outputs.ready == 'true'
+        run: python -m export.export_csv
+
+      - name: Generate dbt docs
+        if: steps.config.outputs.ready == 'true'
+        working-directory: transform
+        run: dbt docs generate
+
+      - name: Upload outputs
+        if: steps.config.outputs.ready == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-outputs
+          path: |
+            dashboard_data/
+            transform/target/index.html
+            transform/target/manifest.json
+            transform/target/catalog.json
+            transform/target/run_results.json
+          if-no-files-found: warn
