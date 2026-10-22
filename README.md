@@ -165,4 +165,4 @@ sql/               the original hand-run BigQuery script this pipeline replaced
 
 ## Tools
 
-BigQuery, dbt, Python, GitHub Actions, Tableau Public. I designed the analysis approach and reviewed every result. I used an AI assistant (Claude) to help write and debug the SQL, the Python, the dbt project, and the GitHub Actions workflows, and to talk through methodology and pipeline design.
+BigQuery, dbt, Python, GitHub Actions, Tableau Public. I designed the analysis and the baseline method and wrote the original SQL with help from an AI assistant (Claude). Claude wrote most of the pipeline code (Python ingestion, dbt project, GitHub Actions); I ran it end to end and confirmed it reproduces the original results exactly.
