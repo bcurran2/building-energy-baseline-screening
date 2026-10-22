@@ -1,0 +1,32 @@
+name: bdg2
+version: "1.0.0"
+profile: bdg2
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+# Method settings. Change them on the command line for a sensitivity run, e.g.
+#   dbt build --vars '{unstable_month_ratio: 3}'
+vars:
+  comparison_start: "2017-01-01"   # 2016 = baseline year, 2017 = comparison year
+  expected_hours: 17544            # 8,784 (2016, leap year) + 8,760 (2017)
+  min_condition_hours: 3           # drop baseline cells seen fewer times than this
+  min_matched_hours: 4000          # drop buildings with fewer matched 2017 hours
+  near_zero_kwh: 0.5               # an hour below this counts as "near zero"
+  dead_meter_share: 0.05           # > 5% near-zero hours in 2016 -> dead_meter_2016
+  low_baseline_kwh: 50000          # < 50,000 kWh in 2016 -> low_baseline
+  unstable_month_ratio: 4          # biggest 2016 month > 4x smallest -> unstable_2016
+
+models:
+  bdg2:
+    staging:
+      +schema: staging             # -> dataset bdg2_staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate        # -> dataset bdg2_intermediate
+      +materialized: table
+    marts:
+      +schema: marts               # -> dataset bdg2_marts
+      +materialized: table

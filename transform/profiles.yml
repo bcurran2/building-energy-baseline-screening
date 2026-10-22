@@ -1,0 +1,19 @@
+# Connection settings for dbt. No secrets live here: authentication uses
+# Application Default Credentials (`gcloud auth application-default login`
+# on your machine; the google-github-actions/auth step in GitHub Actions).
+bdg2:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT') }}"
+      dataset: "{{ env_var('BQ_DATASET', 'bdg2') }}"
+      location: "{{ env_var('BQ_LOCATION', 'US') }}"
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 900
+      job_retries: 1
+      # Guardrail: any single query that would scan more than 20 GB fails
+      # instead of running. A full build scans far less than this.
+      maximum_bytes_billed: 20000000000

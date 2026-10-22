@@ -1,0 +1,56 @@
+models:
+  - name: stg_bdg2__electricity
+    description: Hourly electricity readings in long format, one row per building per hour. NULL readings are dropped.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [building_id, reading_ts]
+    columns:
+      - name: reading_ts
+        description: Hour of the reading (site-local time as provided by the source).
+        data_tests: [not_null]
+      - name: building_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bdg2__buildings')
+                field: building_id
+      - name: kwh
+        description: Electricity used in that hour, kWh.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+  - name: stg_bdg2__buildings
+    description: Building metadata, typed. One row per building.
+    columns:
+      - name: building_id
+        data_tests: [not_null, unique]
+      - name: site_id
+        data_tests: [not_null]
+      - name: sqft
+        description: Floor area in square feet.
+
+  - name: stg_bdg2__weather
+    description: Hourly weather per site. Temperatures in Celsius.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [site_id, weather_ts]
+    columns:
+      - name: site_id
+        data_tests: [not_null]
+      - name: weather_ts
+        data_tests: [not_null]
+      - name: air_temp_c
+        description: Outdoor air temperature, degrees Celsius.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -60
+                max_value: 60
+              config:
+                severity: warn

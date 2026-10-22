@@ -1,0 +1,25 @@
+sources:
+  - name: bdg2
+    description: >
+      Building Data Genome Project 2 (Miller et al., 2020, Scientific Data),
+      loaded unchanged by ingest/load_bdg2.py.
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: "{{ env_var('BQ_RAW_DATASET', 'bdg2_raw') }}"
+    tables:
+      - name: electricity
+        description: >
+          Hourly electricity in kWh, 2016-2017. Wide format: a `timestamp`
+          column plus one FLOAT64 column per building. Timestamps are local to
+          each site. Completeness (one row per hour for two full years) is
+          checked by tests/assert_raw_electricity_covers_two_full_years.sql.
+
+      - name: buildings
+        description: Building metadata (from metadata.csv), one row per building, all columns loaded as STRING.
+        columns:
+          - name: building_id
+            data_tests:
+              - not_null
+              - unique
+
+      - name: weather
+        description: Hourly weather per site. Temperatures are in Celsius.

@@ -1,0 +1,44 @@
+models:
+  - name: building_summary
+    description: >
+      One row per compared building with actual vs. expected kWh and its
+      baseline status. Feeds dashboard_data/building_summary.csv.
+    columns:
+      - name: building_id
+        data_tests: [not_null, unique]
+      - name: primaryspaceusage
+        description: Primary space use from the BDG2 metadata (column name kept from the original export).
+      - name: pct_over
+        description: (actual_kwh - expected_kwh) / expected_kwh over matched hours.
+      - name: excess_kwh
+        description: actual_kwh - expected_kwh.
+      - name: baseline_status
+        description: ok, dead_meter_2016, low_baseline, or unstable_2016. See int_building_baseline_quality.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ok, dead_meter_2016, low_baseline, unstable_2016]
+
+  - name: monthly_by_building
+    description: Monthly kWh and average outdoor temperature (F) per building. Feeds dashboard_data/monthly_by_building.csv.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [building_id, month]
+    columns:
+      - name: building_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('building_summary')
+                field: building_id
+
+  - name: screening_funnel
+    description: Building counts at each screening stage. Feeds dashboard_data/funnel.csv.
+    columns:
+      - name: step
+        data_tests: [not_null, unique]
+      - name: buildings
+        data_tests: [not_null]

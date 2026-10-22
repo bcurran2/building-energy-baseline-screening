@@ -1,0 +1,41 @@
+# Runs on every push and pull request. Needs no cloud credentials:
+# lints and unit-tests the Python, and parses the dbt project (which checks
+# every model, test, and YAML file without connecting to BigQuery).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Unit tests
+        run: pytest
+
+      - name: Parse dbt project
+        working-directory: transform
+        env:
+          GCP_PROJECT: ci-parse-only
+          DBT_PROFILES_DIR: .
+        run: |
+          dbt deps
+          dbt parse

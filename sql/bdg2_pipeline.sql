@@ -1,3 +1,7 @@
+-- NOTE: This is the original, hand-run version of the analysis (October 2026).
+-- The pipeline in ingest/, transform/ (dbt), and export/ replaces it; the
+-- logic is the same. Kept as a record of how the analysis was first built.
+
 -- ============================================================================
 -- Building energy analytics pipeline: Building Data Genome Project 2 (BDG2)
 -- Platform: BigQuery (sandbox), project bdg2-energy, dataset bdg2
