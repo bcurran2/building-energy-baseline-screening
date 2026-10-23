@@ -25,7 +25,7 @@ flowchart LR
 | Intermediate | Joins readings to buildings and site weather, builds the 2016 baseline, compares 2017, and flags baseline-quality problems. | [`transform/models/intermediate`](transform/models/intermediate) |
 | Marts | The three tables the dashboard uses, with the same columns as the original exports. | [`transform/models/marts`](transform/models/marts) |
 | Export | Writes the marts to CSV for Tableau Public. | [`export/export_csv.py`](export/export_csv.py) |
-| Automation | CI on every push (lint, unit tests, dbt parse); full pipeline weekly or on demand. | [`.github/workflows`](.github/workflows) |
+| Automation | CI on every push (lint, unit tests, dbt parse); full pipeline monthly or on demand. | [`.github/workflows`](.github/workflows) |
 
 `make docs` generates the dbt documentation site, including a lineage graph of every model.
 
@@ -53,7 +53,7 @@ cd transform && ../.venv/bin/dbt build --vars '{unstable_month_ratio: 3}'
 
 ## Scheduled runs
 
-[`pipeline.yml`](.github/workflows/pipeline.yml) runs the whole pipeline every Monday and on demand (Actions tab > Pipeline > Run workflow). It uploads the dashboard CSVs and the dbt docs as a run artifact. To turn it on:
+[`pipeline.yml`](.github/workflows/pipeline.yml) runs the whole pipeline once a month and on demand (Actions tab > Pipeline > Run workflow). It uploads the dashboard CSVs and the dbt docs as a run artifact. To turn it on:
 
 1. In Google Cloud, create a service account with the **BigQuery User** and **BigQuery Data Editor** roles, and create a JSON key for it.
 2. In this repo's Settings > Secrets and variables > Actions, add the key as a secret named `GCP_SA_KEY`, and add a variable named `GCP_PROJECT` with the project ID.

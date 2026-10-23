@@ -1,5 +1,5 @@
 # Runs the full pipeline against BigQuery: ingest -> dbt build (models + tests)
-# -> export dashboard CSVs. Weekly, or on demand from the Actions tab.
+# -> export dashboard CSVs. Monthly, or on demand from the Actions tab.
 #
 # Setup (see README > Scheduled runs): add a repository secret GCP_SA_KEY
 # (service account key JSON) and a repository variable GCP_PROJECT. Until both
@@ -8,7 +8,7 @@ name: Pipeline
 
 on:
   schedule:
-    - cron: "37 11 * * 1" # Mondays, 11:37 UTC
+    - cron: "37 11 3 * *" # 3rd of each month, 11:37 UTC
   workflow_dispatch:
     inputs:
       force_reload:
